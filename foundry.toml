@@ -3,9 +3,11 @@ src = "src"
 out = "out"
 libs = ["lib"]
 ffi = true
-fs_permissions = [{ access = "read-write", path = ".forge-snapshots/"}]
+fs_permissions = [{ access = "read-write", path = ".forge-snapshots/" }]
 solc_version = "0.8.26"
 evm_version = "cancun"
+optimizer = true
+optimizer-runs = 100
 
-
-# See more config options https://github.com/foundry-rs/foundry/tree/master/config
+# Set your Etherscan API key. You can use a single key for all networks...
+etherscan_api_key = "GR6VD2K8DJ6967EAZSC9UFAGM17HS6VX37"
