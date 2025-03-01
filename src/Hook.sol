@@ -5,6 +5,7 @@ import {IERC20} from "forge-std/interfaces/IERC20.sol";
 import {BaseHook} from "./BaseHook.sol";
 import {SafeCallback} from "@uniswap/v4-periphery/src/base/SafeCallback.sol";
 import {ImmutableState} from "@uniswap/v4-periphery/src/base/ImmutableState.sol";
+import {MockERC20} from "./MockERC20.sol";
 
 import {Hooks} from "@uniswap/v4-core/src/libraries/Hooks.sol";
 import {IPoolManager} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
@@ -18,6 +19,7 @@ import {SafeCast} from "@uniswap/v4-core/src/libraries/SafeCast.sol";
 import {FixedPointMathLib} from "src/FixedPointMathLib.sol";
 import {Gaussian} from "lib/solstat/src/Gaussian.sol";
 // import {console} from "forge-std/console.sol";
+import {DynamicPoolBasedMinter} from "src/DynamicPoolBasedMinter.sol";
 
 contract Hook is BaseHook, SafeCallback {
     using SafeCast for uint256;
@@ -43,16 +45,25 @@ contract Hook is BaseHook, SafeCallback {
 
     /// @notice Track each user's liquidity shares per pool
     mapping(PoolId => mapping(address => uint256)) public userLiquidityShares;
+    MockERC20 public USDC;
 
-    constructor(IPoolManager poolManager_) SafeCallback(poolManager_) {}
+    constructor(IPoolManager poolManager_, MockERC20 erc20) SafeCallback(poolManager_) {
+        USDC = erc20;
+    }
 
     function _poolManager() internal view override returns (IPoolManager) {
         return poolManager;
     }
 
+    DynamicPoolBasedMinter public dynamicMarket;
+
+    function setMinter(DynamicPoolBasedMinter minter) public {
+        dynamicMarket = minter;
+    }
     // ------------------------------------------------
     // Hook Permissions
     // ------------------------------------------------
+
     function getHookPermissions() public pure override returns (Hooks.Permissions memory) {
         return Hooks.Permissions({
             beforeInitialize: false,
@@ -358,7 +369,7 @@ contract Hook is BaseHook, SafeCallback {
     // ------------------------------------------------
 
     /**
-     * @dev The "unlock callback" is called by the PoolManager after `poolManager.unlock(data)`.
+     * @dev The "unlock callback" is called by the PoolManager after `poolManager.unlock(data)`.modif
      *      We decode `data`, figure out which flow (add or remove), and execute accordingly.
      */
     function _unlockCallback(bytes calldata data) internal override returns (bytes memory) {
@@ -518,7 +529,20 @@ contract Hook is BaseHook, SafeCallback {
         return market;
     }
 
-    function MakeMarket(string calldata marketDescription, uint256 registrationDelay, uint256 marketLength) public {
+    event MarketMade(address indexed maker, uint256 timestamp, uint256 startPrice);
+
+    function MakeMarket(
+        string calldata marketDescription,
+        uint256 registrationDelay,
+        uint256 marketLength,
+        uint256 initialUSDC,
+        uint256 startPrice
+    ) public {
+        emit MarketMade(msg.sender, block.timestamp, startPrice);
+        USDC.transferFrom(msg.sender, address(this), initialUSDC);
+
+        dynamicMarket.startMarket(initialUSDC, startPrice);
+
         market = Market({
             description: marketDescription,
             keyRegistrationExpiration: block.timestamp + registrationDelay,

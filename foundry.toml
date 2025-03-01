@@ -9,5 +9,10 @@ evm_version = "cancun"
 optimizer = true
 optimizer-runs = 100
 
+etherscan_api_key = "${ETHERSCAN_API_KEY}"
 # Set your Etherscan API key. You can use a single key for all networks...
-etherscan_api_key = "GR6VD2K8DJ6967EAZSC9UFAGM17HS6VX37"
+[rpc_endpoints]
+sepolia = "${SEPOLIA_RPC_URL}"
+
+[etherscan]
+sepolia = { key = "${ETHERSCAN_API_KEY}" }
