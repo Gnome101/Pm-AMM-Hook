@@ -14,6 +14,8 @@ import {PoolSwapTest} from "v4-core/src/test/PoolSwapTest.sol";
 
 import {StateLibrary} from "v4-core/src/libraries/StateLibrary.sol";
 import {IERC20Minimal} from "v4-core/src/interfaces/external/IERC20Minimal.sol";
+import {MockERC20} from "../src/MockERC20.sol";
+import {DynamicPoolBasedMinter} from "../src/DynamicPoolBasedMinter.sol";
 
 import {LiquidityAmounts} from "v4-core/test/utils/LiquidityAmounts.sol";
 import {IPositionManager} from "v4-periphery/src/interfaces/IPositionManager.sol";
@@ -43,6 +45,8 @@ contract EnhancedPmAMMTest is Test, Fixtures {
     uint256 constant INITIAL_LIQUIDITY = 100e18;
     int256 constant LIQUIDITY_FACTOR = 1e18; // L = 1.0 in 1e18
     uint256 constant MARKET_DURATION = 7 days;
+    MockERC20 USDC;
+    DynamicPoolBasedMinter dpMinter;
 
     function setUp() public {
         // Set up manager + tokens
@@ -58,16 +62,17 @@ contract EnhancedPmAMMTest is Test, Fixtures {
             uint160(Hooks.BEFORE_SWAP_FLAG | Hooks.BEFORE_SWAP_RETURNS_DELTA_FLAG | Hooks.BEFORE_ADD_LIQUIDITY_FLAG)
                 ^ (0x4444 << 144) // Just a "namespace" trick
         );
-
+        USDC = new MockERC20("Real Cash Money", "USDC");
         // Deploy the Hook with constructor `Hook(IPoolManager manager)`
-        bytes memory constructorArgs = abi.encode(manager);
+        bytes memory constructorArgs = abi.encode(manager, USDC);
         deployCodeTo("Hook.sol:Hook", constructorArgs, flags);
         hook = Hook(flags);
-
+        dpMinter = new DynamicPoolBasedMinter(manager, address(hook), USDC);
+        hook.setMinter(dpMinter);
         // Create a pool key and initialize it
         key = PoolKey(currency0, currency1, 3000, 60, IHooks(hook));
         poolId = key.toId();
-        manager.initialize(key, SQRT_PRICE_1_1);
+        // manager.initialize(key, 79228162514264337593543950336);
 
         tickLower = TickMath.minUsableTick(key.tickSpacing);
         tickUpper = TickMath.maxUsableTick(key.tickSpacing);
@@ -79,7 +84,31 @@ contract EnhancedPmAMMTest is Test, Fixtures {
         // Use the same ID for "marketId"
     }
 
-    // 1) Test initializing a prediction market
+    function test_makeMarket() public {
+        // Just sets T=100 in the Hook’s pool state, and sets L=1e18, X=Y=0
+        // hook.initializeTime(key, 100);
+        USDC.mint(address(this), 100e18);
+        USDC.approve(address(hook), 100e18);
+        // Now read the pool’s state
+        hook.MakeMarket("a", 10, 100e18, 1e18, 1e18);
+    }
+ function test_dynamicMint() public {
+        // Just sets T=100 in the Hook’s pool state, and sets L=1e18, X=Y=0
+        // hook.initializeTime(key, 100);
+        USDC.mint(address(this), 100e18);
+        USDC.approve(address(hook), 100e18);
+        // Now read the pool’s state
+        hook.MakeMarket("a", 10, 100e18, 1e18, 1e18);
+   
+        // Now read the pool’s state
+        uint256 money = 100e18;
+        USDC.mint(address(this),money );
+        USDC.approve(address(dpMinter), money );
+        dpMinter.depositAndMint(money );
+      
+
+        // console.log("Market initialized successfully");
+    }
     function test_marketInitialization() public {
         // Just sets T=100 in the Hook’s pool state, and sets L=1e18, X=Y=0
         // hook.initializeTime(key, 100);

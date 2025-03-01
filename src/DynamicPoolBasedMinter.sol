@@ -5,8 +5,9 @@ import {MockERC20} from "./MockERC20.sol";
 import {Hook} from "./Hook.sol";
 import {PoolKey} from "@uniswap/v4-core/src/types/PoolKey.sol";
 import {IHooks} from "@uniswap/v4-core/src/interfaces/IHooks.sol";
-
+import {console} from "forge-std/console.sol";
 import {Currency, CurrencyLibrary} from "@uniswap/v4-core/src/types/Currency.sol";
+import {IPoolManager} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
 
 /// @title DynamicPoolBasedMinter
 /// @notice Splits a USDC deposit between tokenX and tokenY based on a pool price.
@@ -23,9 +24,11 @@ contract DynamicPoolBasedMinter {
     Hook public hook;
     PoolKey public poolKey;
     MockERC20 public USDC;
+    IPoolManager public manager;
 
-    constructor(address _hook, MockERC20 _usdc) {
+    constructor(IPoolManager _manager, address _hook, MockERC20 _usdc) {
         hook = Hook(_hook);
+        manager = _manager;
         USDC = _usdc;
     }
 
@@ -43,14 +46,17 @@ contract DynamicPoolBasedMinter {
             c1 = temp;
         }
 
-        poolKey = PoolKey({currency0: c0, currency1: c1, fee: 0, tickSpacing: 60, hooks: hook});
-
+        poolKey = PoolKey({currency0: c0, currency1: c1, fee: 3000, tickSpacing: 60, hooks: hook});
+        manager.initialize(poolKey, 79228162514264337593543950336);
         // Calculate the liquidity amounts using the same math as mintTokens.
         (uint256 tokenXLiquidity, uint256 tokenYLiquidity) = mintTokens(mintAmount, startPrice);
 
         // Mint tokens to the contract (or another liquidity provider address)
         tokenX.mint(address(this), tokenXLiquidity);
         tokenY.mint(address(this), tokenYLiquidity);
+        // console.log("Minted tokens");
+        tokenX.approve(address(hook), tokenXLiquidity);
+        tokenY.approve(address(hook), tokenYLiquidity);
 
         hook.addLiquidity(poolKey, tokenXLiquidity, tokenYLiquidity);
     }
@@ -62,7 +68,7 @@ contract DynamicPoolBasedMinter {
     function depositAndMint(uint256 usdcAmount) external {
         uint256 poolPrice = hook.getPoolPrice(poolKey);
         require(poolPrice > 0, "Invalid pool price");
-
+        console.log(poolPrice);
         (uint256 tokenXAmount, uint256 tokenYAmount) = mintTokens(usdcAmount, poolPrice);
         USDC.transferFrom(msg.sender, address(this), usdcAmount);
         tokenX.mint(msg.sender, tokenXAmount);
@@ -88,14 +94,14 @@ contract DynamicPoolBasedMinter {
     function getNOPrice() external view returns (uint256) {
         uint256 poolPrice = hook.getPoolPrice(poolKey);
 
-        (uint256 x, uint256 y) = mintTokens(1, poolPrice);
+        (uint256 x, uint256 y) = mintTokens(1e18, poolPrice);
         return x;
     }
 
     function getYESPrice() external view returns (uint256) {
         uint256 poolPrice = hook.getPoolPrice(poolKey);
 
-        (uint256 x, uint256 y) = mintTokens(1, poolPrice);
+        (uint256 x, uint256 y) = mintTokens(1e18, poolPrice);
         return y;
     }
 

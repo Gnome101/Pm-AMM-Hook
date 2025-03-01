@@ -18,7 +18,7 @@ import {SafeCast} from "@uniswap/v4-core/src/libraries/SafeCast.sol";
 
 import {FixedPointMathLib} from "src/FixedPointMathLib.sol";
 import {Gaussian} from "lib/solstat/src/Gaussian.sol";
-// import {console} from "forge-std/console.sol";
+import {console} from "forge-std/console.sol";
 import {DynamicPoolBasedMinter} from "src/DynamicPoolBasedMinter.sol";
 
 contract Hook is BaseHook, SafeCallback {
@@ -520,6 +520,7 @@ contract Hook is BaseHook, SafeCallback {
         // Scale the real reserves to "v-scale"
         uint256 Xv = ps.X_real; // (ps.X_real * alphaT) / 1e18;
         uint256 Yv = ps.Y_real; //(ps.Y_real * alphaT) / 1e18;
+        console.log(Xv,Yv);
         return (Yv * 1e18) / Xv;
     }
 

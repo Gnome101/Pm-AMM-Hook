@@ -39,7 +39,7 @@ contract DeployAndVerify is Script {
 
         // Deploy DynamicPoolBasedMinter.
         // In this example, we assume its constructor requires the addresses of MockERC20 and Hook.
-        DynamicPoolBasedMinter dpMinter = new DynamicPoolBasedMinter(address(hook), mockERC20);
+        DynamicPoolBasedMinter dpMinter = new DynamicPoolBasedMinter(pm, address(hook), mockERC20);
         /*, other constructor args if any */
         console.log("DynamicPoolBasedMinter deployed to:", address(dpMinter));
         // hook.setMinter(dpMinter);

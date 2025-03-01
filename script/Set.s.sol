@@ -14,8 +14,8 @@ contract DeployAndVerify is Script {
     function run() external {
         // Retrieve the deployer's private key from the environment.
         // Make sure to set the PRIVATE_KEY environment variable.
-        Hook pm = Hook(0x71Dfc4BDE9500D953d57162B2d11398B31Eb4888);
-        DynamicPoolBasedMinter dpMinter = DynamicPoolBasedMinter(0x39cAea288013B3b8B141dB23cBA39B8674036295);
+        Hook pm = Hook(0xa25A00a7FFA44B6D2b10a9DA0C4d9e5e883B0888);
+        DynamicPoolBasedMinter dpMinter = DynamicPoolBasedMinter(0x5d693e107f7036E3c450de4032d9783fA1d850A0);
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY_HEX");
 
         vm.startBroadcast(deployerPrivateKey);
