@@ -49,10 +49,7 @@ Contract Details
     •.  FixedPointLib - Used solmate fixed point library for optimized math.
 
 # References
-	•	Paradigm Paper: Static PM AMM
  https://www.paradigm.xyz/2024/11/pm-amm
-	•	Foundry Documentation
-	•	Uniswap v4 Documentation
 
 # License
 
